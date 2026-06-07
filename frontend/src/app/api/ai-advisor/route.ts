@@ -1,99 +1,73 @@
-import { supabase } from "@/lib/supabase";
 import { NextResponse } from "next/server";
+import Groq from "groq-sdk";
 
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
+});
 
 export async function POST(
   request: Request
 ) {
-
   try {
-
-    
     const {
       question,
       travelStyle,
       travelPersonality,
-    } =
-      await request.json();
+    } = await request.json();
 
     const prompt = `
-    You are Moksh Yatri AI Travel Advisor.
+You are Moksh Yatri AI Travel Advisor.
 
-    Traveler Style:
-    ${travelStyle}
+Traveler Style:
+${travelStyle}
 
-    Traveler Personality:
-    ${travelPersonality}
+Traveler Personality:
+${travelPersonality}
 
-    Question:
-    ${question}
+Question:
+${question}
 
-    Instructions:
+Instructions:
 
-    - Give practical travel advice.
-    - Do not invent festivals, events, weather forecasts, prices, permits, schedules, or local regulations.
-    - If uncertain, say "check current local information before travel".
-    - Prefer general travel guidance over unsupported facts.
-    - Use bullet points.
-    - Keep answer under 250 words.
-    `;
+- Give practical travel advice.
+- Do not invent festivals, events, weather forecasts, prices, permits, schedules, or local regulations.
+- If uncertain, say "check current local information before travel".
+- Prefer general travel guidance over unsupported facts.
+- Use bullet points.
+- Keep answer under 250 words.
+`;
 
-    const response =
-      await fetch(
-        "http://127.0.0.1:11435/api/generate",
-        {
-
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
+    const completion =
+      await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [
+          {
+            role: "user",
+            content: prompt,
           },
-
-          body: JSON.stringify({
-
-            model:
-              "llama3:latest",
-
-            prompt,
-
-            stream: false,
-
-          }),
-
-        }
-      );
-
-    const data =
-      await response.json();
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
+      });
 
     return NextResponse.json({
-
       success: true,
-
       answer:
-        data.response,
-
+        completion.choices[0]?.message?.content ||
+        "No response generated.",
     });
 
   } catch (error) {
-
     console.error(error);
 
     return NextResponse.json(
       {
-
         success: false,
-
-        answer:
-          "AI advisor unavailable.",
-
+        answer: "AI advisor unavailable.",
       },
       {
         status: 500,
       }
     );
-
   }
-
 }

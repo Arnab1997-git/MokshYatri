@@ -1,20 +1,22 @@
-import { Ollama } from "ollama";
-import { supabase } from "@/lib/supabase";
+import Groq from "groq-sdk";
 import { getRelevantGems } from "@/services/aiGemService";
 
-const ollama = new Ollama({
-  host: "http://127.0.0.1:11435",
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
 });
 
 export async function POST(req: Request) {
   try {
-
-    
     const body = await req.json();
 
-    const { destination, days, style } = body;
+    const {
+      destination,
+      days,
+      style,
+    } = body;
 
-    const gems = await getRelevantGems(style);
+    const gems =
+      await getRelevantGems(style);
 
     const gemContext =
       gems.length > 0
@@ -26,12 +28,19 @@ export async function POST(req: Request) {
             .join("\n")
         : "No hidden gems available.";
 
-    const response = await ollama.chat({
-      model: "llama3",
-      messages: [
-        {
-          role: "system",
-          content: `
+    const completion =
+      await groq.chat.completions.create({
+        model:
+          "llama-3.3-70b-versatile",
+
+        temperature: 0.8,
+
+        max_tokens: 2500,
+
+        messages: [
+          {
+            role: "system",
+            content: `
 You are the premium AI travel planner for Moksh Yatri.
 
 Your job is to create cinematic, immersive, highly detailed travel itineraries.
@@ -112,38 +121,47 @@ Requirements:
 * Do not output JSON.
 * Do not explain your reasoning.
 * Directly generate the itinerary.
+`,
+          },
+          {
+            role: "user",
+            content: `
+Plan a ${days}-day ${style} trip to ${destination}.
 
-          `,
-        },
-        {
-          role: "user",
-          content: `
-          Plan a ${days}-day ${style} trip to ${destination}.
+Recommended Hidden Gems:
 
-          Recommended Hidden Gems:
+${gemContext}
 
-          ${gemContext}
+When appropriate, naturally include these hidden gems inside the itinerary.
 
-          When appropriate, naturally include these hidden gems
-          inside the itinerary.
+Do not force them.
 
-          Do not force them.
-
-          Use them only when they improve the travel experience.
-          `,
-        },
-      ],
-    });
+Use them only when they improve the travel experience.
+`,
+          },
+        ],
+      });
 
     return Response.json({
-      result: response.message.content,
+      result:
+        completion.choices[0]
+          ?.message?.content ||
+        "No itinerary generated.",
     });
+
   } catch (error) {
+
     console.error(error);
 
     return Response.json(
-      { error: "AI generation failed" },
-      { status: 500 }
+      {
+        error:
+          "AI generation failed",
+      },
+      {
+        status: 500,
+      }
     );
+
   }
 }
