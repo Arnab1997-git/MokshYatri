@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+:root {
+  --background: #030712;
+  --foreground: #ffffff;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left,
+      rgba(59, 130, 246, 0.15),
+      transparent 30%),
+
+    radial-gradient(circle at bottom right,
+      rgba(139, 92, 246, 0.12),
+      transparent 30%),
+
+    #030712;
+
+  color: var(--foreground);
+
+  font-family: var(--font-inter);
+
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-playfair);
+}
+
+* {
+  scroll-behavior: smooth;
+}
+
+::selection {
+  background: rgba(255,255,255,0.2);
+}
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  overflow-x: hidden;
+}
